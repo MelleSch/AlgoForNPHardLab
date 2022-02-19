@@ -1,7 +1,1 @@
-*.jar
-.classpath
-.project
-.settings
-.vscode
-bin
-target
+.idea/
