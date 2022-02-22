@@ -93,6 +93,41 @@ public class DeadSquareDetector {
             }
 
         }
+
+        // Pass 3
+        for (int x = 0; x < board.width(); x++) {
+            for (int y = 0; y < board.height(); y++) {
+
+                int tile = board.tile(x, y);
+
+                if (CTile.isWall(tile) || CTile.forSomeBox(tile)) continue;
+
+                if (y != 0) {
+                    upTile = answer[x][y - 1];
+                    upTileWall = CTile.isWall(board.tile(x, y - 1));
+                }
+                if (y != board.height() - 1 ) {
+                    bottomTile = answer[x][y + 1];
+                    bottomTileWall = CTile.isWall(board.tile(x, y + 1));
+                }
+                if (x != 0) {
+                    leftTile = answer[x - 1][y];
+                    leftTileWall = CTile.isWall(board.tile(x - 1, y));
+                }
+                if (x != board.width() - 1) {
+                    rightTile = answer[x + 1][y];
+                    rightTileWall = CTile.isWall(board.tile(x + 1, y));
+                }
+
+                if (upTile && bottomTile && (leftTileWall || rightTile)) answer[x][y] = true;
+                if ((upTileWall || bottomTileWall) && leftTile && rightTile) answer[x][y] = true;
+                if (upTileWall && bottomTileWall && (!leftTile || !rightTile)) answer[x][y] = false;
+                if ((!upTile || !bottomTile) && leftTileWall && rightTileWall) answer[x][y] = false;
+
+
+            }
+        }
+
         return answer;
     }
 
