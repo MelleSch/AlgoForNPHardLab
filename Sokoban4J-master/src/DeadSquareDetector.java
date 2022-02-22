@@ -22,6 +22,7 @@ public class DeadSquareDetector {
 
                 if (CTile.isWall(tile)) {
                     answer[x][y] = true;
+                    visited[x][y] = true;
                     continue;
                 }
 
@@ -82,7 +83,9 @@ public class DeadSquareDetector {
                 }
 
                 // if v is target, we can ignore it.
-                if (target.equals(v)) continue;
+                if (targets.contains(v)) {
+                    continue;
+                }
 
                 // this is a dead square.
                 if ((upTile || bottomTile) && (leftTile || rightTile)) answer[v.x][v.y] = true;

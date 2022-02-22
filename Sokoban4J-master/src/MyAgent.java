@@ -1,6 +1,8 @@
 import static java.lang.System.out;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.PriorityQueue;
 
 import agents.ArtificialAgent;
 import game.actions.EDirection;
@@ -33,6 +35,12 @@ public class MyAgent extends ArtificialAgent {
         }
 		
 		return result.isEmpty() ? null : result;
+	}
+
+	private void aStar(int level, PriorityQueue<List<EDirection>> result) {
+		if (level <= 0) return;
+
+		++searchedNodes;
 	}
 
 	private boolean dfs(int level, List<EDirection> result) {
@@ -79,5 +87,12 @@ public class MyAgent extends ArtificialAgent {
 		}
 		
 		return false;
+	}
+}
+
+class PathComparator implements Comparator<List<EDirection>> {
+	@Override
+	public int compare(List<EDirection> p1, List<EDirection> p2) {
+		return Integer.compare(p2.size(), p1.size());
 	}
 }
