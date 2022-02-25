@@ -1,6 +1,7 @@
 import static java.lang.System.out;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 import agents.ArtificialAgent;
 import game.actions.EDirection;
@@ -23,13 +24,12 @@ public class MyAgent extends ArtificialAgent {
 		this.board = board;
 		searchedNodes = 0;
 		long searchStartMillis = System.currentTimeMillis();
-		
-		List<EDirection> result = new ArrayList<EDirection>();
+
 //		dfs(5, result); // the number marks how deep we will search (the longest plan we will consider)
 		visitedboards = new HashSet<>();
 		deadsquares = DeadSquareDetector.detect(board);
 
-		List<EDirection> ret = aStar(1);
+		List<EDirection> ret = aStar();
 
 		long searchTime = System.currentTimeMillis() - searchStartMillis;
         
@@ -42,14 +42,9 @@ public class MyAgent extends ArtificialAgent {
 		return ret.isEmpty() ? null : ret;
 	}
 
-	private int heur(List<CAction> path) {
-//		for (int i = 0; i < path.size(); i++) {
-//			path.get(i).perform(board);
-//		}
+	private int heur(BoardCompact board) {
+
 		// If the board is a victory then it is highest priority possible
-		if (board.isVictory()) {
-			return Integer.MIN_VALUE/2;
-		}
 		// Else return a value calculated by a multitude of factors such as:
 		// Bad Factors:
 		// The state has been visited (use hashmap)
@@ -59,35 +54,14 @@ public class MyAgent extends ArtificialAgent {
 		// Boxes are on the goal/close to the goal (look for the smallest manhattan distance between boxes and goals)
 
 		// If the board has been visited before return a big number to make sure the path is low priority
-		boolean dead = false;
-		for(int x = 0; x < board.width(); x++) {
-			for (int y = 0; y < board.height(); y++) {
-				if (deadsquares[x][y]) {
-					if (CTile.isSomeBox(board.tile(x, y))) {
-						dead = true;
-						break;
-					}
-				}
-			}
-			if (dead) {
-				break;
-			}
-		}
-		int heurval = visitedboards.contains(board) || dead ? Integer.MAX_VALUE/2 : 0;
+		int heurval =  0;
 
-//		for (int i = path.size() - 1; i >= 0; i--) {
-//			path.get(i).reverse(board);
-//		}
 		return heurval;
 	}
 
-	private List<EDirection> aStar(int level) {
-		++searchedNodes;
-
-		List<EDirection> result = new ArrayList<>();
-		PriorityQueue<List<CAction>> pqueue = new PriorityQueue<>(4, new PathComparator());
+	private List<EDirection> aStar() {
+		PriorityQueue<Node> pqueue = new PriorityQueue<>();
 		List<CAction> actions = new ArrayList<>(4);
-		Map<List<CAction>, Double> costs = new HashMap<>();
 
 		for (CMove move : CMove.getActions()) {
 			if (move.isPossible(board)) {
@@ -96,15 +70,23 @@ public class MyAgent extends ArtificialAgent {
 		}
 		for (CPush push : CPush.getActions()) {
 			if (push.isPossible(board)) {
+				int x = board.playerX + 2 * push.getDirection().dX;
+				int y = board.playerY + 2 * push.getDirection().dY;
+				if (deadsquares[x][y]) {
+					continue;
+				}
 				actions.add(push);
 			}
 		}
 
 		for (CAction action : actions) {
+			BoardCompact boardcopy = board.clone();
+			action.perform(boardcopy);
+			visitedboards.add(boardcopy);
 			ArrayList<CAction> moves = new ArrayList<>();
 			moves.add(action);
-			pqueue.add(moves);
-			costs.put(moves, 1.0 + heur(moves)); // TODO: What should this value be?
+			Node newNode = new Node(moves, boardcopy);
+			pqueue.add(newNode);
 		}
 
 		/*
@@ -116,62 +98,57 @@ public class MyAgent extends ArtificialAgent {
 		 */
 
 		while (!pqueue.isEmpty()) {
+			Node node = pqueue.remove();
+			BoardCompact currboard = node.state;
+			searchedNodes++;
 
-			// clean current results list
-			result.clear();
-
-			List<CAction> qActions = pqueue.remove();
-
-			for (CAction a : qActions) {
-				result.add(a.getDirection());
-				a.perform(board);
-			}
-			visitedboards.add(board);
 			// CHECK VICTORY
-			if (board.isVictory()) {
+			if (currboard.isVictory()) {
 				// SOLUTION FOUND!
-				return result;
+				return node.path.stream().map(CAction::getDirection).collect(Collectors.toList());
 			}
-
-			double currentCost = costs.get(qActions);
-			double newCost;
 			List<CAction> nextActions = new ArrayList<>();
-
 
 			// Add all potential moves
 			for (CMove move : CMove.getActions()) {
-				if (move.isPossible(board)) {
+				if (move.isPossible(currboard)) {
 					nextActions.add(move);
 				}
 			}
 
 			// Add all potential pushes
 			for (CPush push : CPush.getActions()) {
-				if (push.isPossible(board)) {
+				if (push.isPossible(currboard)) {
+					int x = currboard.playerX + 2 * push.getDirection().dX;
+					int y = currboard.playerY + 2 * push.getDirection().dY;
+					if (deadsquares[x][y]) {
+						continue;
+					}
 					nextActions.add(push);
 				}
 			}
 
 			// Loop through the next possible actions, add them to PQ if they are any good.
 			for (CAction nextAction : nextActions) {
-				List<CAction> actionList = new ArrayList<>();
-				actionList.addAll(qActions);
-				actionList.add(nextAction);
-				newCost = currentCost + 1;// + heur(actionList);
+				BoardCompact newBoard = currboard.clone();
+				nextAction.perform(newBoard);
 
-				if (!costs.containsKey(actionList)) {
-					costs.put(actionList, newCost);
-					pqueue.add(actionList);
+				if (visitedboards.contains(newBoard)) {
+					continue;
 				}
-				else if (costs.get(actionList) > newCost) {
-					costs.replace(actionList, newCost);
-					pqueue.add(actionList);
+
+				ArrayList<CAction> actionList = new ArrayList<>();
+				actionList.addAll(node.path);
+				actionList.add(nextAction);
+				if (newBoard.isVictory()) return node.path.stream().map(CAction::getDirection).collect(Collectors.toList());
+				Node newNode = new Node(actionList, newBoard);
+				visitedboards.add(newBoard);
+				if (newNode.heuristic != Integer.MAX_VALUE/2) {
+					pqueue.add(newNode);
 				}
-			}
-			for (int i = qActions.size() - 1; i >= 0; i--) {
-				qActions.get(i).reverse(board);
 			}
 		}
+		System.out.println("Queue emptied out, no solution found");
 		return new ArrayList<>();
 	}
 
@@ -222,11 +199,20 @@ public class MyAgent extends ArtificialAgent {
 		return false;
 	}
 
-	class PathComparator implements Comparator<List<CAction>> {
+	class Node implements Comparable<Node> {
+		private int heuristic;
+		private ArrayList<CAction> path;
+		private BoardCompact state;
+
+		public Node(ArrayList<CAction> path, BoardCompact state) {
+			this.path = path;
+			this.state = state;
+			this.heuristic = heur(state);
+		}
+
 		@Override
-		public int compare(List<CAction> p1, List<CAction> p2) {
-			// Add heuristic function to compare here
-			return Integer.compare(p1.size() + heur(p1), p2.size() + heur(p2));
+		public int compareTo(Node other) {
+			return Integer.compare(this.path.size() + this.heuristic, this.path.size() + other.heuristic);
 		}
 	}
 }
