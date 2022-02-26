@@ -24,7 +24,7 @@ public class DeadSquareTest {
     }
 
     public static void main(String[] args) {
-        File levels = new File("Sokoban4J-master/levels/Aymeric_du_Peloux_1_Minicosmos.sok");
+        File levels = new File("Sokoban4J-master/levels/Aymeric_Medium.sok");
         if (!levels.canRead()) {
             System.out.printf("can't find level file %s\n", levels.getAbsolutePath());
             return;

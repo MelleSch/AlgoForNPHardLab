@@ -18,6 +18,7 @@ public class MyAgent extends ArtificialAgent {
 	protected int searchedNodes;
 	protected HashSet<BoardCompact> visitedboards;
 	protected boolean[][] deadsquares;
+	protected int[][] targetDistances;
 	
 	@Override
 	protected List<EDirection> think(BoardCompact board) {
@@ -28,6 +29,7 @@ public class MyAgent extends ArtificialAgent {
 //		dfs(5, result); // the number marks how deep we will search (the longest plan we will consider)
 		visitedboards = new HashSet<>();
 		deadsquares = DeadSquareDetector.detect(board);
+		targetDistances = MinTargetDistancesCalculator.distances(board);
 
 		List<EDirection> ret = aStar();
 
@@ -52,11 +54,18 @@ public class MyAgent extends ArtificialAgent {
 		// The character is far away from a box (look for the smallest manhattan distance to a box)
 		// Good Factors:
 		// Boxes are on the goal/close to the goal (look for the smallest manhattan distance between boxes and goals)
-
-		// If the board has been visited before return a big number to make sure the path is low priority
-		int heurval =  0;
-
-		return heurval;
+		int heurval = 0;
+		int maxDistBoxPlayer = 0;
+		for (int x = 0; x < board.width(); x++) {
+			for (int y = 0; y < board.height(); y++) {
+				int tile = board.tile(x, y);
+				if (!CTile.forSomeBox(tile) && CTile.isSomeBox(tile)) {
+					heurval += targetDistances[x][y];
+					maxDistBoxPlayer = Math.max(maxDistBoxPlayer, Math.abs(x - board.playerX) + Math.abs(y - board.playerY));
+				}
+			}
+		}
+		return heurval + maxDistBoxPlayer;
 	}
 
 	private List<EDirection> aStar() {
