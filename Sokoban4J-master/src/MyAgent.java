@@ -56,15 +56,24 @@ public class MyAgent extends ArtificialAgent {
 		return heurval;
 	}
 
+
+	// Runs the A* algorithm.
 	private List<EDirection> aStar() {
+
+		// Initialize the Priority Queue and list of actions.
 		PriorityQueue<Node> pqueue = new PriorityQueue<>();
 		List<CAction> actions = new ArrayList<>(4);
 
+
+		// Loop through the possible moves from the initial board state, add possible actions to list of actions.
 		for (CMove move : CMove.getActions()) {
 			if (move.isPossible(board)) {
 				actions.add(move);
 			}
 		}
+
+		// Loop through the potential pushes from the initial board state, add possible actions to list of actions.
+		// If push location is a dead square, ignore the square.
 		for (CPush push : CPush.getActions()) {
 			if (push.isPossible(board)) {
 				int x = board.playerX + 2 * push.getDirection().dX;
@@ -76,6 +85,9 @@ public class MyAgent extends ArtificialAgent {
 			}
 		}
 
+		// Loop through the collected actions.
+		// For each action, create a new board state and perform the action. Mark new board as visited.
+		// Create a new Node from the newly created board state and add it to PQ.
 		for (CAction action : actions) {
 			BoardCompact boardcopy = board.clone();
 			action.perform(boardcopy);
@@ -86,34 +98,30 @@ public class MyAgent extends ArtificialAgent {
 			pqueue.add(newNode);
 		}
 
-		/*
-			XXXXX
-			X   X
-			X P X
-			X $.X
-			XXXXX
-		 */
-
+		// Run the main while loop when PQ is empty.
 		while (!pqueue.isEmpty()) {
 			Node node = pqueue.remove();
 			BoardCompact currboard = node.state;
 			searchedNodes++;
 
-			// CHECK VICTORY
+			// Check for victory.
 			if (currboard.isVictory()) {
-				// SOLUTION FOUND!
+				// If solution found, map CAction list to EDirection list and return it.
 				return node.path.stream().map(CAction::getDirection).collect(Collectors.toList());
 			}
+
+			// Initialize a list of next actions.
 			List<CAction> nextActions = new ArrayList<>();
 
-			// Add all potential moves
+			// Loop through the possible moves from the initial board state, add possible actions to list of actions.
 			for (CMove move : CMove.getActions()) {
 				if (move.isPossible(currboard)) {
 					nextActions.add(move);
 				}
 			}
 
-			// Add all potential pushes
+			// Loop through the potential pushes from the initial board state, add possible actions to list of actions.
+			// If push location is a dead square, ignore the square.
 			for (CPush push : CPush.getActions()) {
 				if (push.isPossible(currboard)) {
 					int x = currboard.playerX + 2 * push.getDirection().dX;
@@ -125,24 +133,31 @@ public class MyAgent extends ArtificialAgent {
 				}
 			}
 
-			// Loop through the next possible actions, add them to PQ if they are any good.
+			// Loop through the collected actions.
 			for (CAction nextAction : nextActions) {
 				BoardCompact newBoard = currboard.clone();
+
+				// Perform the action.
 				nextAction.perform(newBoard);
 
 				if (visitedboards.contains(newBoard)) {
 					continue;
 				}
 
+				// Initialize the list of actions we can do, add all past actions + next action.
 				ArrayList<CAction> actionList = new ArrayList<>();
 				actionList.addAll(node.path);
 				actionList.add(nextAction);
+
+				// If victory.
 				if (newBoard.isVictory()) return node.path.stream().map(CAction::getDirection).collect(Collectors.toList());
+
+				// Create a new node.
 				Node newNode = new Node(actionList, newBoard);
+
+				// Add to visited boards.
 				visitedboards.add(newBoard);
-				if (newNode.heuristic != Integer.MAX_VALUE/2) {
-					pqueue.add(newNode);
-				}
+				pqueue.add(newNode);
 			}
 		}
 		System.out.println("Queue emptied out, no solution found");
