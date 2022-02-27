@@ -24,7 +24,7 @@ public class DeadSquareTest {
     }
 
     public static void main(String[] args) {
-        File levels = new File("Sokoban4J-master/levels/Aymeric_Medium.sok");
+        File levels = new File("Sokoban4J-master/levels/Aymeric_du_Peloux_1_Minicosmos.sok");
         if (!levels.canRead()) {
             System.out.printf("can't find level file %s\n", levels.getAbsolutePath());
             return;
@@ -40,7 +40,7 @@ public class DeadSquareTest {
 
             BoardCompact bc = board.makeBoardCompact();
 
-            boolean[][] dead = DeadSquareDetector.detect(bc);
+            boolean[][] dead = DeadSquareDetector.deadsquares(bc);
             
             System.out.println("dead squares: \n");
             for (int y = 0 ; y < bc.height() ; ++y) {

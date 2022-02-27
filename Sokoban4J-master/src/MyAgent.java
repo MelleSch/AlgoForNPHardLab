@@ -26,9 +26,8 @@ public class MyAgent extends ArtificialAgent {
 		searchedNodes = 0;
 		long searchStartMillis = System.currentTimeMillis();
 
-//		dfs(5, result); // the number marks how deep we will search (the longest plan we will consider)
 		visitedboards = new HashSet<>();
-		deadsquares = DeadSquareDetector.detect(board);
+		deadsquares = DeadSquareDetector.deadsquares(board);
 		targetDistances = MinTargetDistancesCalculator.distances(board);
 
 		List<EDirection> ret = aStar();
@@ -45,27 +44,16 @@ public class MyAgent extends ArtificialAgent {
 	}
 
 	private int heur(BoardCompact board) {
-
-		// If the board is a victory then it is highest priority possible
-		// Else return a value calculated by a multitude of factors such as:
-		// Bad Factors:
-		// The state has been visited (use hashmap)
-		// The state has a box on a dead square
-		// The character is far away from a box (look for the smallest manhattan distance to a box)
-		// Good Factors:
-		// Boxes are on the goal/close to the goal (look for the smallest manhattan distance between boxes and goals)
 		int heurval = 0;
-		int maxDistBoxPlayer = 0;
 		for (int x = 0; x < board.width(); x++) {
 			for (int y = 0; y < board.height(); y++) {
 				int tile = board.tile(x, y);
-				if (!CTile.forSomeBox(tile) && CTile.isSomeBox(tile)) {
+				if (CTile.isSomeBox(tile)) {
 					heurval += targetDistances[x][y];
-					maxDistBoxPlayer = Math.max(maxDistBoxPlayer, Math.abs(x - board.playerX) + Math.abs(y - board.playerY));
 				}
 			}
 		}
-		return heurval + maxDistBoxPlayer;
+		return heurval;
 	}
 
 	private List<EDirection> aStar() {
@@ -161,53 +149,6 @@ public class MyAgent extends ArtificialAgent {
 		return new ArrayList<>();
 	}
 
-
-	private boolean dfs(int level, List<EDirection> result) {
-		if (level <= 0) return false; // DEPTH-LIMITED
-		
-		++searchedNodes;
-		
-		// COLLECT POSSIBLE ACTIONS
-		
-		List<CAction> actions = new ArrayList<CAction>(4);
-		
-		for (CMove move : CMove.getActions()) {
-			if (move.isPossible(board)) {
-				actions.add(move);
-			}
-		}
-		for (CPush push : CPush.getActions()) {
-			if (push.isPossible(board)) {
-				actions.add(push);
-			}
-		}
-		
-		// TRY ACTIONS
-		for (CAction action : actions) {
-			// PERFORM THE ACTION
-			result.add(action.getDirection());
-			action.perform(board);
-			
-			// CHECK VICTORY
-			if (board.isVictory()) {
-				// SOLUTION FOUND!
-				return true;
-			}
-			
-			// CONTINUE THE SEARCH
-			if (dfs(level - 1, result)) {
-				// SOLUTION FOUND!
-				return true;
-			}
-			
-			// REVERSE ACTION
-			result.remove(result.size()-1);
-			action.reverse(board);
-		}
-		
-		return false;
-	}
-
 	class Node implements Comparable<Node> {
 		private int heuristic;
 		private ArrayList<CAction> path;
@@ -221,7 +162,7 @@ public class MyAgent extends ArtificialAgent {
 
 		@Override
 		public int compareTo(Node other) {
-			return Integer.compare(this.path.size() + this.heuristic, this.path.size() + other.heuristic);
+			return Integer.compare(this.path.size() + this.heuristic, other.path.size() + other.heuristic);
 		}
 	}
 }
