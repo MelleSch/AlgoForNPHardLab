@@ -15,6 +15,9 @@ public class NQueens {
             if (col == 0 && n % 2 == 0 && row >= n/2.0) {
                 break;
             }
+            if (col == 1 && n % 2 == 1 && formation.get(0).row == n/2 && row >= n/2.0) {
+                break;
+            }
             // Make a tuple for the new field to check
             Tuple tuple = new Tuple(row, col + row, col - row);
             // Check if the tuple is already contained by using the overridden equals method
@@ -62,7 +65,7 @@ public class NQueens {
                 }
             }
         }
-        return n % 2 == 0 ? count * 2 : count;
+        return n > 1 ? count * 2 : count;
     }
 }
 
