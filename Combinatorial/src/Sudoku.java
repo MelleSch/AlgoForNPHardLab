@@ -1,5 +1,7 @@
 class Solution {
 
+    public static int[] primes;
+
     /**
      * Returns the filled in sudoku grid.
      *
@@ -7,7 +9,31 @@ class Solution {
      * @return the fully filled sudoku grid.
      */
     public static int[][] solve(int[][] grid) {
+        primes = new int[grid.length];
+        fillPrimes();
         return validSudoku(grid) ? grid : null;
+    }
+
+    public static void fillPrimes() {
+        int i = 0;
+        // Calculate magical upper bound of the n-th prime
+        double v = Math.log(primes.length) / Math.log(Math.E);
+        int ub = (int) (primes.length * (v + Math.log(v) / Math.log(Math.E)));
+        boolean[] notPrime = new boolean[ub];
+        int index = 2;
+        while (i < primes.length) {
+            while(notPrime[index]) {
+                index++;
+            }
+            if (!notPrime[index]) {
+                primes[i] = index;
+                for (int j = 2; j < ub / index; j++) {
+                    notPrime[j * index] = true;
+                }
+                i++;
+                index++;
+            }
+        }
     }
 
     public static boolean validSudoku(int[][] grid) {
@@ -55,9 +81,10 @@ class Solution {
             if (grid[i][col] == n) return false;
         }
 
-        // checks if n already exists in the 3x3 square, return false if yes.
-        for (int x = row - row % 3; x <= row - row % 3 + 2; x++) {
-            for (int y = col - col % 3; y <= col - col % 3 + 2; y++) {
+        // checks if n already exists in the sqrtnxsqrtn square, return false if yes.
+        int sqrtn = ((int) Math.sqrt(grid.length));
+        for (int x = row - row % sqrtn; x < row - row % sqrtn + sqrtn; x++) {
+            for (int y = col - col % sqrtn; y < col - col % sqrtn + sqrtn; y++) {
                 if (grid[x][y] == n) return false;
             }
         }
